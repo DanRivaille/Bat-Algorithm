@@ -29,7 +29,7 @@ class BatAlgorithm():
     
     self.freq = [0.0] * NP
     self.v = [[0.0 for i in range(self.D)] for j in range(self.NP)]
-    self.x = [[0.0 for i in range(self.D)] for j in range(self.NP)]
+    self.x = np.zeros((NP, D))
     self.fitness = [0.0] * NP
     self.F_min = 0.0
     self.best = [0.0] * D
@@ -44,7 +44,7 @@ class BatAlgorithm():
         random = np.random.uniform(0,1)
         self.v[i][j] = 0.0
         self.x[i][j] = self.Lower + (self.Upper - self.Lower) * random
-      self.fitness[i] = self.function(self.D, self.x[i])
+      self.fitness[i] = self.function(self.x[i])
     
     # Se busca el mejor murcialago
     self.best_bat()
@@ -69,22 +69,22 @@ class BatAlgorithm():
     
     return value
   
-  def move_bats(self):
+  def move_bats(self, name_logs_file='logs.csv'):
     self.init_bats()
-    solutions = [[0.0 for i in range(self.D)] for j in range(self.NP)]
+    solutions = np.zeros((self.NP, self.D))
 
-    with open('logs.csv', mode='w') as logs_file:
+    with open(name_logs_file, mode='w') as logs_file:
       initial_time = time.perf_counter()
       logs_writter = csv.writer(logs_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-      logs_writter.writerow("ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness".split(','))
+      logs_writter.writerow('ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness'.split(','))
 
       # Metaheuristic
       for t in range(self.N_Gen + 1):
         Arata2 = np.mean(self.A)
 
         # For logs purposes, not metaheuristic
-        if (t % 100) == 0:
+        if (t % 10) == 0:
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
           log = f'{self.ejecution},{t},{MH_params},{(time.perf_counter() - initial_time) * 1000},{self.seed},{self.BKS},{self.F_min}'
@@ -108,7 +108,7 @@ class BatAlgorithm():
               random = np.random.uniform(-1.0, 1.0)
               solutions[i][j] = self.simple_bounds(self.best[j] + random * Arata2)
           
-          fitness = self.function(self.D, solutions[i])
+          fitness = self.function(solutions[i])
           
           random = np.random.uniform(0, 1)
           
@@ -118,7 +118,7 @@ class BatAlgorithm():
               self.x[i][j] = solutions[i][j]
           
           if(self.fitness[i] < self.F_min):
-            self.F_min = self.function(self.D, solutions[i])
+            self.F_min = self.function(solutions[i])
             for j in range(self.D):
                 self.best[j] = self.x[i][j] 
               
