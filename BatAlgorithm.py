@@ -69,7 +69,7 @@ class BatAlgorithm():
     
     return value
   
-  def move_bats(self, name_logs_file='logs.csv'):
+  def move_bats(self, name_logs_file='logs.csv', interval_logs=100):
     self.init_bats()
     solutions = np.zeros((self.NP, self.D))
 
@@ -84,7 +84,7 @@ class BatAlgorithm():
         Arata2 = np.mean(self.A)
 
         # For logs purposes, not metaheuristic
-        if (t % 10) == 0:
+        if (t % interval_logs) == 0:
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
           log = f'{self.ejecution},{t},{MH_params},{(time.perf_counter() - initial_time) * 1000},{self.seed},{self.BKS},{self.F_min}'
