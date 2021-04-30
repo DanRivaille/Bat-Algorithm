@@ -12,13 +12,13 @@ if __name__ == '__main__':
     info = bench.get_info(num_function)
     print(f'\nFunction {num_function}: {info}')
 
-    ejecutions = 1
+    ejecutions = 31
 
     for i in range(1, ejecutions + 1):
       BKS = info['best']
       D = info['dimension']
       NP = 30
-      N_Gen = 35
+      N_Gen = 3500
       A = 0.95
       r = 0.1
       alpha = 0.9
@@ -30,4 +30,4 @@ if __name__ == '__main__':
       ObjetiveFunction = bench.get_function(num_function)
 
       bats = BatAlgorithm(i, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, ObjetiveFunction)
-      bats.move_bats(num_function, f'Logs/Funcion{num_function}_{i}.csv', 10)
+      bats.move_bats(num_function, f'Logs/Funcion{num_function}_{i}.csv', 100)
