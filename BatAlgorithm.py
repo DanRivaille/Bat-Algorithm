@@ -2,6 +2,7 @@ import numpy as np
 import time
 import math
 import csv
+from utils import parseSeconds
 
 class BatAlgorithm():
   def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
@@ -87,7 +88,8 @@ class BatAlgorithm():
         if (t % interval_logs) == 0:
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
-          log = f'{n_fun},{self.ejecution},{t},{MH_params},{(time.perf_counter() - initial_time) * 1000},{self.seed},{self.BKS},{self.F_min}'
+          current_time = parseSeconds(time.perf_counter() - initial_time)
+          log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},{self.F_min}'
           logs_writter.writerow(log.split(','))
           print(log)
 
