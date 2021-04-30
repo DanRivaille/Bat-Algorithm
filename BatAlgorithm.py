@@ -69,7 +69,7 @@ class BatAlgorithm():
     
     return value
   
-  def move_bats(self, name_logs_file='logs.csv', interval_logs=100):
+  def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
     self.init_bats()
     solutions = np.zeros((self.NP, self.D))
 
@@ -77,7 +77,7 @@ class BatAlgorithm():
       initial_time = time.perf_counter()
       logs_writter = csv.writer(logs_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-      logs_writter.writerow('ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness'.split(','))
+      logs_writter.writerow('function,ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness'.split(','))
 
       # Metaheuristic
       for t in range(self.N_Gen + 1):
@@ -87,7 +87,7 @@ class BatAlgorithm():
         if (t % interval_logs) == 0:
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
-          log = f'{self.ejecution},{t},{MH_params},{(time.perf_counter() - initial_time) * 1000},{self.seed},{self.BKS},{self.F_min}'
+          log = f'{n_fun},{self.ejecution},{t},{MH_params},{(time.perf_counter() - initial_time) * 1000},{self.seed},{self.BKS},{self.F_min}'
           logs_writter.writerow(log.split(','))
           print(log)
 
