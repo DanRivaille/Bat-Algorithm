@@ -2,6 +2,14 @@ from BatAlgorithm import *
 from cec2013lsgo.cec2013 import Benchmark
 from numpy.random import rand
 
+# Function for debuging
+def function(x):
+  val = 0.0
+  for i in range(10):
+    val += x[i] ** 2
+
+  return val
+
 if __name__ == '__main__':
   bench = Benchmark()
 
@@ -12,11 +20,11 @@ if __name__ == '__main__':
     info = bench.get_info(num_function)
     print(f'\nFunction {num_function}: {info}')
 
-    ejecutions = 31
+    ejecutions = 1
 
     for i in range(1, ejecutions + 1):
       BKS = info['best']
-      D = info['dimension']
+      D = 10
       NP = 30
       N_Gen = 3500
       A = 0.95
@@ -27,7 +35,7 @@ if __name__ == '__main__':
       fmax = 1
       Lower = info['lower']
       Upper = info['upper']
-      ObjetiveFunction = bench.get_function(num_function)
+      ObjetiveFunction = function
 
       bats = BatAlgorithm(i, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, ObjetiveFunction)
       bats.move_bats(num_function, f'Logs/Funcion{num_function}_{i}.csv', 100)

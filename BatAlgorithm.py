@@ -4,6 +4,10 @@ import math
 import csv
 from utils import parseSeconds
 
+MAX_BATS = 100
+MIN_BATS = 5
+INCREMENTS_BATS = 5
+
 class BatAlgorithm():
   def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
     self.ejecution = ejecution
@@ -61,18 +65,62 @@ class BatAlgorithm():
     
     self.F_min = self.fitness[j]
   
-  def simple_bounds(self, value):
-    if(value > self.Upper):
-      value = self.Upper
+  def simple_bounds(self, value, lower, upper):
+    if(value > upper):
+      value = upper
         
-    if(value < self.Lower):
-      value = self.Lower
+    if(value < lower):
+      value = lower
     
     return value
+
+  def checkImprove(self, past_best, solutions):
+    # Se empaquetan los datos, para que cada murcielago tenga sus datos juntos al ordenarlos
+    l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v, solutions))
+
+    # Se ordenan los murcielagos, a partir del valor del fitness
+    ol = sorted(l, key=lambda y: self.function(y[0]))
+
+    # Se desempaquetan las listas ordenadas (los que no son np.array llegan como tuplas)
+    self.x, A, r, freq, fitness, v, solutions = list(zip(*ol))
+
+    # Si la solucion no ha mejorado, y no se ha llegado al limite se incrementan los murcielagos
+    if past_best == self.F_min:
+      if self.NP + INCREMENTS_BATS <= MAX_BATS:
+        # Se incrementan la cantidad de murcielagos
+        self.NP += INCREMENTS_BATS
+
+        # Se concatenan los datos de los mejores fitness al final de cada listas
+        self.A = list(A) + [A[0]] * INCREMENTS_BATS
+        self.r = list(r) + [r[0]] * INCREMENTS_BATS
+        self.freq = list(freq) + [freq[0]] * INCREMENTS_BATS
+        self.fitness = list(fitness) + [fitness[0]] * INCREMENTS_BATS
+        self.v = list(v) + [v[0]] * INCREMENTS_BATS
+        self.x = np.concatenate((self.x, np.array([self.x[0]] * INCREMENTS_BATS)))
+        solutions = np.concatenate((solutions, np.array([solutions[0]] * INCREMENTS_BATS)))
+
+        print(f'Increment {past_best} -> {self.F_min}, {self.x[-1]}: {self.function(self.x[-1])}')
+    else:
+      if self.NP - INCREMENTS_BATS >= MIN_BATS:
+        # Se decrementan la cantidad de murcielagos
+        self.NP -= INCREMENTS_BATS
+
+        # Se eliminan los peores murcielagos con sus datos de cada lista
+        self.A = list(A[:-INCREMENTS_BATS])
+        self.r = list(r[:-INCREMENTS_BATS])
+        self.freq = list(freq[:-INCREMENTS_BATS])
+        self.fitness = list(fitness[:-INCREMENTS_BATS])
+        self.v = list(v[:-INCREMENTS_BATS])
+        self.x = self.x[:-INCREMENTS_BATS]
+        solutions = solutions[:-INCREMENTS_BATS]
+        print(f'Decrement {past_best} -> {self.F_min}, {self.x[0]}: {self.function(self.x[0])}')
+
   
   def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
     self.init_bats()
     solutions = np.zeros((self.NP, self.D))
+
+    past_best = self.F_min
 
     with open(name_logs_file, mode='w') as logs_file:
       initial_time = time.perf_counter()
@@ -93,6 +141,10 @@ class BatAlgorithm():
           logs_writter.writerow(log.split(','))
           print(log)
 
+          if t != 0:
+            self.checkImprove(past_best, solutions)
+            past_best = self.F_min
+
         for i in range(self.NP):
           # Ecuacion (2)
           beta = np.random.uniform(0, 1)
@@ -101,14 +153,14 @@ class BatAlgorithm():
           for j in range(self.D):
             # Ecuaciones (3) y (4)
             self.v[i][j] = self.v[i][j] + (self.x[i][j] - self.best[j]) * self.freq[i]
-            solutions[i][j] = self.simple_bounds(self.x[i][j] + self.v[i][j])
+            solutions[i][j] = self.simple_bounds(self.x[i][j] + self.v[i][j], self.Lower, self.Upper)
           
           random = np.random.uniform(0, 1)
 
           if(random > self.r[i]):
             for j in range(self.D):
               random = np.random.uniform(-1.0, 1.0)
-              solutions[i][j] = self.simple_bounds(self.best[j] + random * Arata2)
+              solutions[i][j] = self.simple_bounds(self.best[j] + random * Arata2, self.Lower, self.Upper)
           
           fitness = self.function(solutions[i])
           
