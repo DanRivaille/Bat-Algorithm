@@ -132,8 +132,8 @@ class BatAlgorithm():
       for t in range(self.N_Gen + 1):
         Arata2 = np.mean(self.A)
 
-        # For logs purposes, not metaheuristic
         if (t % interval_logs) == 0:
+          # For logs purposes, not metaheuristic
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
           current_time = parseSeconds(time.perf_counter() - initial_time)
@@ -141,6 +141,7 @@ class BatAlgorithm():
           logs_writter.writerow(log.split(','))
           print(log)
 
+          # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
             self.checkImprove(past_best, solutions)
             past_best = self.F_min
