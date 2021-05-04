@@ -81,7 +81,7 @@ class BatAlgorithm():
     # Se ordenan los murcielagos, a partir del valor del fitness
     ol = sorted(l, key=lambda y: self.function(y[0]))
 
-    # Se desempaquetan las listas ordenadas (los que no son np.array llegan como tuplas)
+    # Se desempaquetan las listas ordenadas (llegan como tuplas)
     self.x, A, r, freq, fitness, v, solutions = list(zip(*ol))
 
     # Si la solucion no ha mejorado, y no se ha llegado al limite se incrementan los murcielagos
@@ -90,16 +90,15 @@ class BatAlgorithm():
         # Se incrementan la cantidad de murcielagos
         self.NP += INCREMENTS_BATS
 
-        # Se concatenan los datos de los mejores fitness al final de cada listas
+        # Se concatenan los datos de los mejores fitness al final de cada lista
         self.A = list(A) + [A[0]] * INCREMENTS_BATS
         self.r = list(r) + [r[0]] * INCREMENTS_BATS
         self.freq = list(freq) + [freq[0]] * INCREMENTS_BATS
         self.fitness = list(fitness) + [fitness[0]] * INCREMENTS_BATS
         self.v = list(v) + [v[0]] * INCREMENTS_BATS
-        self.x = np.concatenate((self.x, np.array([self.x[0]] * INCREMENTS_BATS)))
-        solutions = np.concatenate((solutions, np.array([solutions[0]] * INCREMENTS_BATS)))
-
-        print(f'Increment {past_best} -> {self.F_min}, {self.x[-1]}: {self.function(self.x[-1])}')
+        self.x = np.array(self.x + (self.x[0], ) * INCREMENTS_BATS)
+        solutions = np.array(solutions + (solutions[0], ) * INCREMENTS_BATS)
+        #print(f'Increment {past_best} -> {self.F_min}, {self.x[-1]}: {self.function(self.x[-1])}')
     else:
       if self.NP - INCREMENTS_BATS >= MIN_BATS:
         # Se decrementan la cantidad de murcielagos
@@ -111,10 +110,11 @@ class BatAlgorithm():
         self.freq = list(freq[:-INCREMENTS_BATS])
         self.fitness = list(fitness[:-INCREMENTS_BATS])
         self.v = list(v[:-INCREMENTS_BATS])
-        self.x = self.x[:-INCREMENTS_BATS]
-        solutions = solutions[:-INCREMENTS_BATS]
-        print(f'Decrement {past_best} -> {self.F_min}, {self.x[0]}: {self.function(self.x[0])}')
+        self.x = np.array(self.x[:-INCREMENTS_BATS])
+        solutions = np.array(solutions[:-INCREMENTS_BATS])
+        #print(f'Decrement {past_best} -> {self.F_min}, {self.x[0]}: {self.function(self.x[0])}')
 
+    return solutions
   
   def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
     self.init_bats()
@@ -143,7 +143,7 @@ class BatAlgorithm():
 
           # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
-            self.checkImprove(past_best, solutions)
+            solutions = self.checkImprove(past_best, solutions)
             past_best = self.F_min
 
         for i in range(self.NP):
