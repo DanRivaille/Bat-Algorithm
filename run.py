@@ -13,7 +13,7 @@ def function(x):
 if __name__ == '__main__':
   bench = Benchmark()
 
-  INITIAL_FUNCTION = 2
+  INITIAL_FUNCTION = 1
   CANT_FUNCTIONS = 1
 
   for num_function in range(INITIAL_FUNCTION, INITIAL_FUNCTION + CANT_FUNCTIONS):

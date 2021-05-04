@@ -2,7 +2,7 @@ import numpy as np
 import time
 import math
 import csv
-from utils import parseSeconds
+from utils import parseSeconds, pause
 
 MAX_BATS = 100
 MIN_BATS = 5
@@ -79,7 +79,7 @@ class BatAlgorithm():
     l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v, solutions))
 
     # Se ordenan los murcielagos, a partir del valor del fitness
-    ol = sorted(l, key=lambda y: self.function(y[0]))
+    ol = sorted(l, key=lambda y: y[4])
 
     # Se desempaquetan las listas ordenadas (llegan como tuplas)
     self.x, A, r, freq, fitness, v, solutions = list(zip(*ol))

@@ -13,3 +13,6 @@ def parseSeconds(seconds):
   seconds = seconds % SEC_PER_MINUTES
 
   return f'{days}:{hours}:{minutes}:' + '{:.3f}'.format(seconds)
+
+def pause():
+  programPause = input("Press the <ENTER> key to continue...")
