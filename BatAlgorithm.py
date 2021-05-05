@@ -124,7 +124,7 @@ class BatAlgorithm():
 
     with open(name_logs_file, mode='w') as logs_file:
       initial_time = time.perf_counter()
-      logs_writter = csv.writer(logs_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+      logs_writter = csv.writer(logs_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
       logs_writter.writerow('function,ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness'.split(','))
 
@@ -137,7 +137,7 @@ class BatAlgorithm():
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
           current_time = parseSeconds(time.perf_counter() - initial_time)
-          log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},{self.F_min}'
+          log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},"{self.F_min}"'
           logs_writter.writerow(log.split(','))
           print(log)
 
