@@ -2,7 +2,7 @@ import numpy as np
 import time
 import math
 import csv
-from utils import parseSeconds, pause
+from scripts.utils import parseSeconds, pause
 
 MAX_BATS = 100
 MIN_BATS = 5
