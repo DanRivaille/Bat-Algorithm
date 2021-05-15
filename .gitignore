@@ -1,6 +1,7 @@
 *.csv
 Logs/
 .DS_Store
+prueba.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
