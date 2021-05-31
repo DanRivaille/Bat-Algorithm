@@ -1,8 +1,9 @@
+from sklearn.cluster import DBSCAN
 import numpy as np
 import time
 import math
 import csv
-from scripts.utils import parseSeconds, pause
+from scripts.utils import parseSeconds
 
 MAX_BATS = 100
 MIN_BATS = 5
