@@ -1,6 +1,5 @@
 from BatAlgorithm import *
 from cec2013lsgo.cec2013 import Benchmark
-from numpy.random import rand
 
 # Function for debuging
 def function(x):
@@ -13,14 +12,14 @@ def function(x):
 if __name__ == '__main__':
   bench = Benchmark()
 
-  INITIAL_FUNCTION = 1
+  INITIAL_FUNCTION = 2
   CANT_FUNCTIONS = 1
 
   for num_function in range(INITIAL_FUNCTION, INITIAL_FUNCTION + CANT_FUNCTIONS):
     info = bench.get_info(num_function)
     print(f'\nFunction {num_function}: {info}')
 
-    ejecutions = 31
+    ejecutions = 1
 
     for i in range(1, ejecutions + 1):
       BKS = info['best']

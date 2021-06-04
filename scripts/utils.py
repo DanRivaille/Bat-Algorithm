@@ -1,3 +1,5 @@
+from sklearn import cluster
+from sklearn.cluster import DBSCAN
 import math
 
 def parseSeconds(seconds):
@@ -50,3 +52,9 @@ def get_epsilon_value_knn(k_value, puntos):
   mean_total_puntos /= len(puntos)
 
   return mean_total_puntos
+
+def clusterize_solutions(sols, min_samp):
+  epsilon = get_epsilon_value_knn(min_samp, sols)
+  model = DBSCAN(eps=epsilon, min_samples=min_samp)
+  clusters = model.fit(X=sols)
+  return clusters
