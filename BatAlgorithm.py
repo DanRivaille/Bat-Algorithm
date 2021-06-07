@@ -1,8 +1,9 @@
+from sklearn.cluster import DBSCAN
 import numpy as np
 import time
 import math
 import csv
-from scripts.utils import parseSeconds, pause
+from scripts.utils import *
 
 MAX_BATS = 100
 MIN_BATS = 5
@@ -139,11 +140,32 @@ class BatAlgorithm():
           current_time = parseSeconds(time.perf_counter() - initial_time)
           log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},"{self.F_min}"'
           logs_writter.writerow(log.split(','))
-          print(log)
+          print('\n' + log)
 
           # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
             solutions = self.checkImprove(past_best, solutions)
+
+            clusters = clusterize_solutions(self.x, 3)
+
+            # Diccionario que contiene la informacion para calcular el promedio de cada cluster.
+            # Para cada cluster se puede acceder a su informacion por su label,
+            # como valor guarda un diccionario para organizar su informacion
+            fitness_clusters = {l: {'sum':0, 'total':0, 'mean': 0} for l in np.unique(clusters.labels_)}
+
+            # Se obtiene la suma de los fitness y el total de elementos en cada cluster
+            for (index, label) in enumerate(clusters.labels_):
+              fitness_clusters[label]['sum'] += self.fitness[index]
+              fitness_clusters[label]['total'] += 1
+
+            # Se calcula el promedio
+            for label in fitness_clusters:
+              suma = fitness_clusters[label]['sum']
+              total = fitness_clusters[label]['total']
+              fitness_clusters[label]['mean'] = suma / total
+              print(self.F_min - fitness_clusters[label]['mean'], self.F_min, fitness_clusters[label]['mean'], label)
+            
+
             past_best = self.F_min
 
         for i in range(self.NP):
