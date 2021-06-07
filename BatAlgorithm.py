@@ -130,7 +130,7 @@ class BatAlgorithm():
 
       # Metaheuristic
       for t in range(self.N_Gen + 1):
-        Arata2 = np.mean(self.A)
+        Amean = np.mean(self.A)
 
         if (t % interval_logs) == 0:
           # For logs purposes, not metaheuristic
@@ -159,9 +159,7 @@ class BatAlgorithm():
           random = np.random.uniform(0, 1)
 
           if(random > self.r[i]):
-            for j in range(self.D):
-              random = np.random.uniform(-1.0, 1.0)
-              solutions[i][j] = self.simple_bounds(self.best[j] + random * Arata2, self.Lower, self.Upper)
+            solutions = self.generate_random_solutions(i, solutions, Amean)
           
           fitness = self.function(solutions[i])
           
@@ -180,3 +178,14 @@ class BatAlgorithm():
             # Se actualizan A y r
             self.A[i] = self.A[i] * self.alpha
             self.r[i] = self.r[0] * (1 - math.exp(-self.gamma * t))
+
+
+  def generate_random_solutions(self, number_bat, solutions, Amean):
+    '''
+    Genera nueva soluciones locales para el murcielago numero 'number_bat'
+    '''
+    for j in range(self.D):
+      random = np.random.uniform(-1.0, 1.0)
+      solutions[number_bat][j] = self.simple_bounds(self.best[j] + random * Amean, self.Lower, self.Upper)
+
+    return solutions
