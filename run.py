@@ -4,7 +4,7 @@ from cec2013lsgo.cec2013 import Benchmark
 # Function for debuging
 def function(x):
   val = 0.0
-  for i in range(10):
+  for i in range(len(x)):
     val += x[i] ** 2
 
   return val

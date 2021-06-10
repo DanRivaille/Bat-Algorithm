@@ -45,7 +45,8 @@ class BatAlgorithm():
 
     # Se generan soluciones aleatorias (entre el rango establecido por las bandas)
     for i in range(self.NP):
-      self.freq[i] = 0
+      self.A[i] = 1 + np.random.uniform(0, 1)
+      self.r[i] = np.random.random()
       for j in range(self.D):
         random = np.random.uniform(0,1)
         self.v[i][j] = 0.0
@@ -61,10 +62,14 @@ class BatAlgorithm():
       if self.fitness[i] < self.fitness[j]:
         j = i
             
+    self.set_best_bat(self.x[j], self.fitness[j])
+
+  def set_best_bat(self, bat, fitness):
     for i in range(self.D):
-      self.best[i] = self.x[j][i]
+      self.best[i] = bat[i]
     
-    self.F_min = self.fitness[j]
+    self.F_min = fitness
+
   
   def simple_bounds(self, value, lower, upper):
     if(value > upper):
@@ -170,6 +175,7 @@ class BatAlgorithm():
                 
 
               print(self.F_min - fitness_clusters[label]['mean'], self.F_min, fitness_clusters[label]['mean'], label)
+              print(self.fitness)
             
 
             past_best = self.F_min
@@ -187,7 +193,7 @@ class BatAlgorithm():
           random = np.random.uniform(0, 1)
 
           if(random > self.r[i]):
-            solutions = self.generate_random_solutions(i, solutions, Amean)
+            solutions = self.generate_local_solution(i, solutions, self.best, Amean)
           
           fitness = self.function(solutions[i])
           
@@ -199,27 +205,35 @@ class BatAlgorithm():
             for j in range(self.D):
               self.x[i][j] = solutions[i][j]
           
-          # Si se encontro un mejor fitness, se actualizan algunas variables
-          if(self.fitness[i] < self.F_min):
-            self.F_min = self.function(solutions[i])
-            for j in range(self.D):
-                self.best[j] = self.x[i][j] 
-              
             # Se actualizan A y r
             self.A[i] = self.A[i] * self.alpha
             self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
 
+          # Si se encontro un mejor fitness, se actualizan algunas variables
+          if(self.fitness[i] < self.F_min):
+            self.set_best_bat(self.x[i], self.fitness[i])
+              
 
-  def generate_local_solutions(self, number_bat, solutions):
-    pass
 
-
-  def generate_random_solutions(self, number_bat, solutions, Amean):
+  def generate_local_solution(self, number_bat, solutions, bat, Amean):
     '''
-    Genera nueva soluciones locales para el murcielago numero 'number_bat'
+    Genera una nueva solucion local alrededor del murcielago "bat" para el murcielago numero 'number_bat'
     '''
     for j in range(self.D):
       random = np.random.uniform(-1.0, 1.0)
-      solutions[number_bat][j] = self.simple_bounds(self.best[j] + random * Amean, self.Lower, self.Upper)
+      solutions[number_bat][j] = self.simple_bounds(bat[j] + random * Amean, self.Lower, self.Upper)
 
     return solutions
+
+
+  def generate_random_solution(self, number_bat, solutions):
+    '''
+    Genera una nueva solucion aleatoria para explorar el expacio de busqueda
+    '''
+    for j in range(self.D):
+      random = np.random.uniform(0,1)
+      solutions[number_bat][j] = self.Lower + (self.Upper - self.Lower) * random
+
+    fitness = self.function(solutions[number_bat])
+
+    return solutions, fitness
