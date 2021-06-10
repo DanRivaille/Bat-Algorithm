@@ -163,6 +163,12 @@ class BatAlgorithm():
               suma = fitness_clusters[label]['sum']
               total = fitness_clusters[label]['total']
               fitness_clusters[label]['mean'] = suma / total
+
+              if -1 <= self.F_min - fitness_clusters[label]['mean'] <= 1:
+                # Se reemplaza la mitad del cluster con soluciones aleatorias
+                pass
+                
+
               print(self.F_min - fitness_clusters[label]['mean'], self.F_min, fitness_clusters[label]['mean'], label)
             
 
@@ -187,11 +193,13 @@ class BatAlgorithm():
           
           random = np.random.uniform(0, 1)
           
+          # Se ve si se acepta la nueva solucion
           if(random < self.A[i] and fitness < self.fitness[i]):
             self.fitness[i] = fitness
             for j in range(self.D):
               self.x[i][j] = solutions[i][j]
           
+          # Si se encontro un mejor fitness, se actualizan algunas variables
           if(self.fitness[i] < self.F_min):
             self.F_min = self.function(solutions[i])
             for j in range(self.D):
@@ -199,7 +207,11 @@ class BatAlgorithm():
               
             # Se actualizan A y r
             self.A[i] = self.A[i] * self.alpha
-            self.r[i] = self.r[0] * (1 - math.exp(-self.gamma * t))
+            self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
+
+
+  def generate_local_solutions(self, number_bat, solutions):
+    pass
 
 
   def generate_random_solutions(self, number_bat, solutions, Amean):
