@@ -6,7 +6,7 @@ import csv
 from scripts.utils import *
 
 MAX_BATS = 100
-MIN_BATS = 5
+MIN_BATS = 15
 INCREMENTS_BATS = 5
 
 class BatAlgorithm():
@@ -45,8 +45,8 @@ class BatAlgorithm():
 
     # Se generan soluciones aleatorias (entre el rango establecido por las bandas)
     for i in range(self.NP):
-      self.A[i] = 1 + np.random.uniform(0, 1)
-      self.r[i] = np.random.random()
+      self.A[i] = np.random.uniform(0, 1)
+      self.r[i] = np.random.uniform(0, 1)
       for j in range(self.D):
         random = np.random.uniform(0,1)
         self.v[i][j] = 0.0
@@ -80,32 +80,18 @@ class BatAlgorithm():
     
     return value
 
-  def checkImprove(self, past_best, solutions):
+  def checkImprove(self, past_best, Amean):
     # Se empaquetan los datos, para que cada murcielago tenga sus datos juntos al ordenarlos
-    l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v, solutions))
+    l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v))
 
     # Se ordenan los murcielagos, a partir del valor del fitness
     ol = sorted(l, key=lambda y: y[4])
 
     # Se desempaquetan las listas ordenadas (llegan como tuplas)
-    self.x, A, r, freq, fitness, v, solutions = list(zip(*ol))
+    self.x, A, r, freq, fitness, v = list(zip(*ol))
 
-    # Si la solucion no ha mejorado, y no se ha llegado al limite se incrementan los murcielagos
-    if past_best == self.F_min:
-      if self.NP + INCREMENTS_BATS <= MAX_BATS:
-        # Se incrementan la cantidad de murcielagos
-        self.NP += INCREMENTS_BATS
-
-        # Se concatenan los datos de los mejores fitness al final de cada lista
-        self.A = list(A) + [A[0]] * INCREMENTS_BATS
-        self.r = list(r) + [r[0]] * INCREMENTS_BATS
-        self.freq = list(freq) + [freq[0]] * INCREMENTS_BATS
-        self.fitness = list(fitness) + [fitness[0]] * INCREMENTS_BATS
-        self.v = list(v) + [v[0]] * INCREMENTS_BATS
-        self.x = np.array(self.x + (self.x[0], ) * INCREMENTS_BATS)
-        solutions = np.array(solutions + (solutions[0], ) * INCREMENTS_BATS)
-        #print(f'Increment {past_best} -> {self.F_min}, {self.x[-1]}: {self.function(self.x[-1])}')
-    else:
+    # Si la solucion ha mejorado, y no se ha llegado al limite se decrementan los murcielagos
+    if past_best > self.F_min:
       if self.NP - INCREMENTS_BATS >= MIN_BATS:
         # Se decrementan la cantidad de murcielagos
         self.NP -= INCREMENTS_BATS
@@ -117,14 +103,111 @@ class BatAlgorithm():
         self.fitness = list(fitness[:-INCREMENTS_BATS])
         self.v = list(v[:-INCREMENTS_BATS])
         self.x = np.array(self.x[:-INCREMENTS_BATS])
-        solutions = np.array(solutions[:-INCREMENTS_BATS])
         #print(f'Decrement {past_best} -> {self.F_min}, {self.x[0]}: {self.function(self.x[0])}')
+    else:
+      # Se vuelven a pasar a listas (ya que al ordenar con zip, llegan como tuplas)
+      self.A = list(A)
+      self.r = list(r)
+      self.freq = list(freq)
+      self.fitness = list(fitness)
+      self.v = list(v)
+      self.x = np.array(self.x)
 
-    return solutions
+      clusters = clusterize_solutions(self.x, 3)
+
+      # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
+      # Se guarda ademas si se cambio o no los murcielagos (en la variable "x_is_modified")
+      x_is_modified = self.replace_cluster(clusters)
+
+      # Si se modificaron las posiciones de los muercielagos, se actualiza el mejor murcielago
+      if x_is_modified:
+        self.best_bat()
+      else:
+        if self.NP < MAX_BATS:
+          # Sino se modificaron los murcielagos, y no se alcanzo el limite, se incrementa la poblacion de murcielagos
+          self.increment_cluster(clusters, Amean)
+    
+  def increment_cluster(self, clusters, Amean):
+    x_is_modified = False
+    best_bat_clusters = {l: {'index': [], 'cant': 0} for l in np.unique(clusters.labels_)}
+
+    # Se guardan los indices de los 2 mejores murcielagos de cada cluster
+    for index, label in enumerate(clusters.labels_):
+      if best_bat_clusters[label]['cant'] < 2:
+        best_bat_clusters[label]['index'].append(index)
+        best_bat_clusters[label]['cant'] += 1
+
+    # Se incrementa la poblacion de todos los clusters en 2, agregando 2 soluciones locales
+    # de los mejores murcielagos de cada cluster
+    for label in best_bat_clusters:
+      for index in best_bat_clusters[label]['index']:
+        # Se encuentra una nueva solucion local
+        new_solution = np.empty(self.D)
+        new_solution = self.generate_local_solution(new_solution, self.x[index], Amean)
+
+        # Se ingresa la nueva solucion a los muercielagos
+        self.x = np.append(self.x, [new_solution], axis=0)
+
+        # Se ingresan los datos del nuevo muercielago
+        self.freq.append(self.freq[index])
+        self.A.append(self.A[index])
+        self.r.append(self.r[index])
+        self.v.append(self.v[index])
+        self.fitness.append(self.function(new_solution))
+        self.NP += 1
+
+        x_is_modified = True
+        
+      print(self.NP, self.fitness[:4], self.fitness[-1], label)
+
+    # Si se modificaron las posiciones de los muercielagos, se actualiza el mejor murcielago
+    if x_is_modified:
+      self.best_bat()
+
+  def replace_cluster(self, clusters):
+    # Diccionario que contiene la informacion para calcular el promedio de cada cluster.
+    # Para cada cluster se puede acceder a su informacion por su label,
+    # como valor guarda un diccionario para organizar su informacion
+    fitness_clusters = {l: {'sum':0, 'total':0} for l in np.unique(clusters.labels_)}
+
+    # Se obtiene la suma de los fitness y el total de elementos en cada cluster
+    for (index, label) in enumerate(clusters.labels_):
+      fitness_clusters[label]['sum'] += self.fitness[index]
+      fitness_clusters[label]['total'] += 1
+
+    x_is_modified = False
+
+    for label in fitness_clusters:
+      # Se calcula el promedio
+      suma = fitness_clusters[label]['sum']
+      total = fitness_clusters[label]['total']
+      mean_cluster = suma / total
+
+      if -1 <= self.F_min - mean_cluster <= 1:
+        # Se reemplaza la mitad mas mala del cluster con soluciones aleatorias usando la funcion de exploracion
+        cant = total // 2
+
+        for index in range(self.NP - 1, -1, -1):
+          if cant <= 0:
+            break
+
+          # Si el elemento actual pertenece al cluster que queremos repoblar
+          if clusters.labels_[index] == label:
+            self.x[index], self.fitness[index] = self.generate_random_solution(self.x[index])
+            cant -= 1
+
+          print(self.x[index][:5], self.fitness[index], index, label)
+
+        x_is_modified = True
+        
+      print(self.F_min - mean_cluster, self.F_min, mean_cluster, label)
+
+    return x_is_modified
+
   
   def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
     self.init_bats()
-    solutions = np.zeros((self.NP, self.D))
+    solutions = np.zeros(self.D)
 
     past_best = self.F_min
 
@@ -149,34 +232,8 @@ class BatAlgorithm():
 
           # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
-            solutions = self.checkImprove(past_best, solutions)
-
-            clusters = clusterize_solutions(self.x, 3)
-
-            # Diccionario que contiene la informacion para calcular el promedio de cada cluster.
-            # Para cada cluster se puede acceder a su informacion por su label,
-            # como valor guarda un diccionario para organizar su informacion
-            fitness_clusters = {l: {'sum':0, 'total':0, 'mean': 0} for l in np.unique(clusters.labels_)}
-
-            # Se obtiene la suma de los fitness y el total de elementos en cada cluster
-            for (index, label) in enumerate(clusters.labels_):
-              fitness_clusters[label]['sum'] += self.fitness[index]
-              fitness_clusters[label]['total'] += 1
-
-            # Se calcula el promedio
-            for label in fitness_clusters:
-              suma = fitness_clusters[label]['sum']
-              total = fitness_clusters[label]['total']
-              fitness_clusters[label]['mean'] = suma / total
-
-              if -1 <= self.F_min - fitness_clusters[label]['mean'] <= 1:
-                # Se reemplaza la mitad del cluster con soluciones aleatorias
-                pass
-                
-
-              print(self.F_min - fitness_clusters[label]['mean'], self.F_min, fitness_clusters[label]['mean'], label)
-              print(self.fitness)
-            
+            # LUEGO DE ESTO, LAS LISTAS ESTAN ORDENADAS POR FITNESS
+            self.checkImprove(past_best, Amean)
 
             past_best = self.F_min
 
@@ -188,14 +245,14 @@ class BatAlgorithm():
           for j in range(self.D):
             # Ecuaciones (3) y (4)
             self.v[i][j] = self.v[i][j] + (self.x[i][j] - self.best[j]) * self.freq[i]
-            solutions[i][j] = self.simple_bounds(self.x[i][j] + self.v[i][j], self.Lower, self.Upper)
+            solutions[j] = self.simple_bounds(self.x[i][j] + self.v[i][j], self.Lower, self.Upper)
           
           random = np.random.uniform(0, 1)
 
           if(random > self.r[i]):
-            solutions = self.generate_local_solution(i, solutions, self.best, Amean)
+            solutions = self.generate_local_solution(solutions, self.best, Amean)
           
-          fitness = self.function(solutions[i])
+          fitness = self.function(solutions)
           
           random = np.random.uniform(0, 1)
           
@@ -203,7 +260,7 @@ class BatAlgorithm():
           if(random < self.A[i] and fitness < self.fitness[i]):
             self.fitness[i] = fitness
             for j in range(self.D):
-              self.x[i][j] = solutions[i][j]
+              self.x[i][j] = solutions[j]
           
             # Se actualizan A y r
             self.A[i] = self.A[i] * self.alpha
@@ -215,25 +272,25 @@ class BatAlgorithm():
               
 
 
-  def generate_local_solution(self, number_bat, solutions, bat, Amean):
+  def generate_local_solution(self, solution, bat, Amean):
     '''
     Genera una nueva solucion local alrededor del murcielago "bat" para el murcielago numero 'number_bat'
     '''
     for j in range(self.D):
       random = np.random.uniform(-1.0, 1.0)
-      solutions[number_bat][j] = self.simple_bounds(bat[j] + random * Amean, self.Lower, self.Upper)
+      solution[j] = self.simple_bounds(bat[j] + random * Amean, self.Lower, self.Upper)
 
-    return solutions
+    return solution
 
 
-  def generate_random_solution(self, number_bat, solutions):
+  def generate_random_solution(self, solution):
     '''
     Genera una nueva solucion aleatoria para explorar el expacio de busqueda
     '''
     for j in range(self.D):
       random = np.random.uniform(0,1)
-      solutions[number_bat][j] = self.Lower + (self.Upper - self.Lower) * random
+      solution[j] = self.Lower + (self.Upper - self.Lower) * random
 
-    fitness = self.function(solutions[number_bat])
+    fitness = self.function(solution)
 
-    return solutions, fitness
+    return solution, fitness
