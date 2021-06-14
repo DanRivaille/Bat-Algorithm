@@ -6,7 +6,7 @@ import csv
 from scripts.utils import *
 
 MAX_BATS = 100
-MIN_BATS = 15
+MIN_BATS = 10
 INCREMENTS_BATS = 5
 
 class BatAlgorithm():
@@ -261,20 +261,20 @@ class BatAlgorithm():
             self.fitness[i] = fitness
             for j in range(self.D):
               self.x[i][j] = solutions[j]
-          
-            # Se actualizan A y r
-            self.A[i] = self.A[i] * self.alpha
-            self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
 
           # Si se encontro un mejor fitness, se actualizan algunas variables
           if(self.fitness[i] < self.F_min):
             self.set_best_bat(self.x[i], self.fitness[i])
+          
+            # Se actualizan A y r
+            self.A[i] = self.A[i] * self.alpha
+            self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
               
 
 
   def generate_local_solution(self, solution, bat, Amean):
     '''
-    Genera una nueva solucion local alrededor del murcielago "bat" para el murcielago numero 'number_bat'
+    Genera una nueva solucion local alrededor del murcielago "bat"
     '''
     for j in range(self.D):
       random = np.random.uniform(-1.0, 1.0)
