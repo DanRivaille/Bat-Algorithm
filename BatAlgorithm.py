@@ -6,8 +6,8 @@ import csv
 from scripts.utils import *
 
 MAX_BATS = 100
-MIN_BATS = 10
-INCREMENTS_BATS = 5
+MIN_BATS =  10
+INCREMENTS_BATS = 2
 
 class BatAlgorithm():
   def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
@@ -115,6 +115,8 @@ class BatAlgorithm():
 
       clusters = clusterize_solutions(self.x, 3)
 
+      cant_clusters = np.unique(clusters.labels_).shape[0]
+
       # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
       # Se guarda ademas si se cambio o no los murcielagos (en la variable "x_is_modified")
       x_is_modified = self.replace_cluster(clusters)
@@ -123,9 +125,12 @@ class BatAlgorithm():
       if x_is_modified:
         self.best_bat()
       else:
-        if self.NP < MAX_BATS:
+        if self.NP + (cant_clusters * 2)< MAX_BATS:
           # Sino se modificaron los murcielagos, y no se alcanzo el limite, se incrementa la poblacion de murcielagos
           self.increment_cluster(clusters, Amean)
+
+          # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
+          INCREMENTS_BATS = cant_clusters * 2
     
   def increment_cluster(self, clusters, Amean):
     x_is_modified = False
