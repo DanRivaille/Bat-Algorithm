@@ -130,7 +130,6 @@ class BatAlgorithm():
           self.increment_cluster(clusters, Amean)
 
           # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
-          INCREMENTS_BATS = cant_clusters * 2
     
   def increment_cluster(self, clusters, Amean):
     x_is_modified = False
