@@ -81,6 +81,8 @@ class BatAlgorithm():
     return value
 
   def checkImprove(self, past_best, Amean):
+    global INCREMENTS_BATS
+
     # Se empaquetan los datos, para que cada murcielago tenga sus datos juntos al ordenarlos
     l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v))
 
@@ -125,11 +127,12 @@ class BatAlgorithm():
       if x_is_modified:
         self.best_bat()
       else:
-        if self.NP + (cant_clusters * 2)< MAX_BATS:
+        if self.NP + (cant_clusters * 2) < MAX_BATS:
           # Sino se modificaron los murcielagos, y no se alcanzo el limite, se incrementa la poblacion de murcielagos
           self.increment_cluster(clusters, Amean)
 
           # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
+          INCREMENTS_BATS = cant_clusters * 2
     
   def increment_cluster(self, clusters, Amean):
     x_is_modified = False

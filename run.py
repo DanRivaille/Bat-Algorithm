@@ -12,8 +12,8 @@ def function(x):
 if __name__ == '__main__':
   bench = Benchmark()
 
-  INITIAL_FUNCTION = 2
-  CANT_FUNCTIONS = 1
+  INITIAL_FUNCTION = 3
+  CANT_FUNCTIONS = 3
 
   for num_function in range(INITIAL_FUNCTION, INITIAL_FUNCTION + CANT_FUNCTIONS):
     info = bench.get_info(num_function)
