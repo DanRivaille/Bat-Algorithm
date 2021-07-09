@@ -13,16 +13,16 @@ if __name__ == '__main__':
   bench = Benchmark()
 
   INITIAL_FUNCTION = 2
-  CANT_FUNCTIONS = 1
+  LAST_FUNCTION = 2
 
-  for num_function in range(INITIAL_FUNCTION, INITIAL_FUNCTION + CANT_FUNCTIONS):
+  for num_function in range(INITIAL_FUNCTION, LAST_FUNCTION + 1):
     info = bench.get_info(num_function)
     print(f'\nFunction {num_function}: {info}')
 
-    INITIAL_EJECUTION = 15
-    CANT_EJECUTIONS = 16
+    INITIAL_EJECUTION = 24
+    LAST_EJECUTION = 31
 
-    for i in range(INITIAL_EJECUTION, INITIAL_EJECUTION + CANT_EJECUTIONS):
+    for i in range(INITIAL_EJECUTION, LAST_EJECUTION + 1):
       BKS = info['best']
       D = info['dimension']
       NP = 30
