@@ -8,6 +8,7 @@ from scripts.utils import *
 MAX_BATS = 100
 MIN_BATS =  10
 INCREMENTS_BATS = 2
+INCREMENTS_BATS_PER_CLUSTER = 3
 
 class BatAlgorithm():
   def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
@@ -45,8 +46,7 @@ class BatAlgorithm():
 
     # Se generan soluciones aleatorias (entre el rango establecido por las bandas)
     for i in range(self.NP):
-      self.A[i] = np.random.uniform(0, 1)
-      self.r[i] = np.random.uniform(0, 1)
+      self.freq[i] = 0
       for j in range(self.D):
         random = np.random.uniform(0,1)
         self.v[i][j] = 0.0
@@ -82,6 +82,7 @@ class BatAlgorithm():
 
   def checkImprove(self, past_best, Amean):
     global INCREMENTS_BATS
+    global INCREMENTS_BATS_PER_CLUSTER
 
     # Se empaquetan los datos, para que cada murcielago tenga sus datos juntos al ordenarlos
     l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v))
@@ -127,12 +128,12 @@ class BatAlgorithm():
       if x_is_modified:
         self.best_bat()
       else:
-        if self.NP + (cant_clusters * 2) < MAX_BATS:
+        if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
           # Sino se modificaron los murcielagos, y no se alcanzo el limite, se incrementa la poblacion de murcielagos
           self.increment_cluster(clusters, Amean)
 
           # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
-          INCREMENTS_BATS = cant_clusters * 2
+          INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
     
   def increment_cluster(self, clusters, Amean):
     x_is_modified = False
@@ -140,7 +141,7 @@ class BatAlgorithm():
 
     # Se guardan los indices de los 2 mejores murcielagos de cada cluster
     for index, label in enumerate(clusters.labels_):
-      if best_bat_clusters[label]['cant'] < 2:
+      if best_bat_clusters[label]['cant'] < INCREMENTS_BATS_PER_CLUSTER:
         best_bat_clusters[label]['index'].append(index)
         best_bat_clusters[label]['cant'] += 1
 
