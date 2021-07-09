@@ -24,7 +24,8 @@ $ mkdir Logs
 ```
 4. Probar que funcione:
 ```
-$ python3 run.py
+$ source venv/bin/activate
+(venv) $ python3 run.py
 
 Function 2: {'lower': -5.0, 'upper': 5.0, 'threshold': 0, 'best': 0.0, 'dimension': 1000}
 
