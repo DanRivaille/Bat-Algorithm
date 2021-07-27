@@ -204,7 +204,7 @@ class BatAlgorithm():
             self.x[index], self.fitness[index] = self.generate_random_solution(self.x[index])
             cant -= 1
 
-          print(self.x[index][:5], self.fitness[index], index, label)
+          #print(self.x[index][:5], self.fitness[index], index, label)
 
         x_is_modified = True
         
