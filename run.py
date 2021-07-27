@@ -43,6 +43,7 @@ def handle_args():
   -F, --functions-range <init>:<last>  Ejecuta de la funcion 'init' hasta 'last'
   -e, --ejecution <number>             Ejecuta solo 'number' ejecuciones
   -E, --ejecutions-range <init>:<last> Ejecuta desde 'init' hasta 'last' ejecuciones
+  -h                                   Muestra los comandos disponibles
   """
   global INITIAL_FUNCTION
   global LAST_FUNCTION
@@ -73,7 +74,7 @@ def handle_args():
         INITIAL_EJECUTION = int(sys.argv[current_arg_index])
         LAST_EJECUTION = INITIAL_EJECUTION
 
-      elif '-E' == current_arg or '--ejecution-range' == current_arg:
+      elif '-E' == current_arg or '--ejecutions-range' == current_arg:
         current_arg_index += 1
         range_ejecutions = sys.argv[current_arg_index].split(':')
         INITIAL_EJECUTION = int(range_ejecutions[0])
@@ -84,6 +85,7 @@ def handle_args():
         help_text += "\n-F, --functions-range <init>:<last>  Ejecuta de la funcion 'init' hasta 'last'"
         help_text += "\n-e, --ejecution <number>             Ejecuta solo 'number' ejecuciones"
         help_text += "\n-E, --ejecutions-range <init>:<last> Ejecuta desde 'init' hasta 'last' ejecuciones"
+        help_text += "\n-h                                   Muestra los comandos disponibles"
         print(help_text)
 
       current_arg_index += 1
