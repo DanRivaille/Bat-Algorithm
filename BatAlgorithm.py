@@ -41,6 +41,7 @@ class BatAlgorithm():
     self.F_min = 0.0
     self.best = [0.0] * D
   
+
   def init_bats(self):
     np.random.seed(self.seed)
 
@@ -56,6 +57,7 @@ class BatAlgorithm():
     # Se busca el mejor murcialago
     self.best_bat()
   
+
   def best_bat(self):
     j = 0
     for i in range(self.NP):
@@ -63,6 +65,7 @@ class BatAlgorithm():
         j = i
             
     self.set_best_bat(self.x[j], self.fitness[j])
+
 
   def set_best_bat(self, bat, fitness):
     for i in range(self.D):
@@ -80,10 +83,8 @@ class BatAlgorithm():
     
     return value
 
-  def checkImprove(self, past_best, Amean):
-    global INCREMENTS_BATS
-    global INCREMENTS_BATS_PER_CLUSTER
 
+  def sort_by_fitness(self):
     # Se empaquetan los datos, para que cada murcielago tenga sus datos juntos al ordenarlos
     l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v))
 
@@ -91,7 +92,22 @@ class BatAlgorithm():
     ol = sorted(l, key=lambda y: y[4])
 
     # Se desempaquetan las listas ordenadas (llegan como tuplas)
-    self.x, A, r, freq, fitness, v = list(zip(*ol))
+    self.x, self.A, self.r, self.freq, self.fitness, self.v = list(zip(*ol))
+
+    # Se vuelven a pasar a listas (ya que al ordenar con zip, llegan como tuplas)
+    self.A = list(self.A)
+    self.r = list(self.r)
+    self.freq = list(self.freq)
+    self.fitness = list(self.fitness)
+    self.v = list(self.v)
+    self.x = np.array(self.x)
+
+
+  def check_improve(self, past_best, Amean):
+    global INCREMENTS_BATS
+    global INCREMENTS_BATS_PER_CLUSTER
+
+    self.sort_by_fitness()
 
     # Si la solucion ha mejorado, y no se ha llegado al limite se decrementan los murcielagos
     if past_best > self.F_min:
@@ -100,21 +116,13 @@ class BatAlgorithm():
         self.NP -= INCREMENTS_BATS
 
         # Se eliminan los peores murcielagos con sus datos de cada lista
-        self.A = list(A[:-INCREMENTS_BATS])
-        self.r = list(r[:-INCREMENTS_BATS])
-        self.freq = list(freq[:-INCREMENTS_BATS])
-        self.fitness = list(fitness[:-INCREMENTS_BATS])
-        self.v = list(v[:-INCREMENTS_BATS])
-        self.x = np.array(self.x[:-INCREMENTS_BATS])
-        #print(f'Decrement {past_best} -> {self.F_min}, {self.x[0]}: {self.function(self.x[0])}')
+        self.A = self.A[:-INCREMENTS_BATS]
+        self.r = self.r[:-INCREMENTS_BATS]
+        self.freq = self.freq[:-INCREMENTS_BATS]
+        self.fitness = self.fitness[:-INCREMENTS_BATS]
+        self.v = self.v[:-INCREMENTS_BATS]
+        self.x = self.x[:-INCREMENTS_BATS]
     else:
-      # Se vuelven a pasar a listas (ya que al ordenar con zip, llegan como tuplas)
-      self.A = list(A)
-      self.r = list(r)
-      self.freq = list(freq)
-      self.fitness = list(fitness)
-      self.v = list(v)
-      self.x = np.array(self.x)
 
       clusters = clusterize_solutions(self.x, 3)
 
@@ -135,6 +143,7 @@ class BatAlgorithm():
           # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
           INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
     
+
   def increment_cluster(self, clusters, Amean):
     x_is_modified = False
     best_bat_clusters = {l: {'index': [], 'cant': 0} for l in np.unique(clusters.labels_)}
@@ -171,6 +180,7 @@ class BatAlgorithm():
     # Si se modificaron las posiciones de los muercielagos, se actualiza el mejor murcielago
     if x_is_modified:
       self.best_bat()
+
 
   def replace_cluster(self, clusters):
     # Diccionario que contiene la informacion para calcular el promedio de cada cluster.
@@ -241,7 +251,7 @@ class BatAlgorithm():
           # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
             # LUEGO DE ESTO, LAS LISTAS ESTAN ORDENADAS POR FITNESS
-            self.checkImprove(past_best, Amean)
+            self.check_improve(past_best, Amean)
 
             past_best = self.F_min
 
@@ -277,7 +287,6 @@ class BatAlgorithm():
             # Se actualizan A y r
             self.A[i] = self.A[i] * self.alpha
             self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
-              
 
 
   def generate_local_solution(self, solution, bat, Amean):
@@ -302,3 +311,4 @@ class BatAlgorithm():
     fitness = self.function(solution)
 
     return solution, fitness
+
