@@ -123,63 +123,66 @@ class BatAlgorithm():
         self.v = self.v[:-INCREMENTS_BATS]
         self.x = self.x[:-INCREMENTS_BATS]
     else:
+      new_solutions = []
 
       clusters = clusterize_solutions(self.x, 3)
-
       cant_clusters = np.unique(clusters.labels_).shape[0]
 
+      # Sino se alcanzo el limite, se incrementa la poblacion de murcielagos
+      if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
+        # Se obtienen las nuevas soluciones generadas (llega una lista de tuplas, que guarda
+        # como primer elemento la solucion generada localmente, y como segundo elemento el indice
+        # del murcielago sobre el que se genero la solucion local
+        new_solutions = self.increment_cluster(clusters, Amean)
+
+        # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
+        INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
+
       # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
-      # Se guarda ademas si se cambio o no los murcielagos (en la variable "x_is_modified")
-      x_is_modified = self.replace_cluster(clusters)
+      self.replace_cluster(clusters)
 
-      # Si se modificaron las posiciones de los muercielagos, se actualiza el mejor murcielago
-      if x_is_modified:
-        self.best_bat()
-      else:
-        if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
-          # Sino se modificaron los murcielagos, y no se alcanzo el limite, se incrementa la poblacion de murcielagos
-          self.increment_cluster(clusters, Amean)
+      # Si hay nuevas soluciones se agregan 
+      for element in new_solutions:
+        bat, index = element
+        self.add_new_bat(bat, index)
 
-          # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
-          INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
+      # Se actualiza el mejor fitness
+      self.best_bat()
     
+
+  def add_new_bat(self, new_bat, index):
+    # Se ingresan los datos del nuevo muercielago
+    self.x = np.append(self.x, [new_bat], axis=0)
+    self.freq.append(self.freq[index])
+    self.A.append(self.A[index])
+    self.r.append(self.r[index])
+    self.v.append(self.v[index])
+    self.fitness.append(self.function(new_bat))
+    self.NP += 1
 
   def increment_cluster(self, clusters, Amean):
     x_is_modified = False
     best_bat_clusters = {l: {'index': [], 'cant': 0} for l in np.unique(clusters.labels_)}
 
-    # Se guardan los indices de los 2 mejores murcielagos de cada cluster
+    # Se guardan los indices de los INCREMENTS_BATS_PER_CLUSTER mejores murcielagos de cada cluster
     for index, label in enumerate(clusters.labels_):
       if best_bat_clusters[label]['cant'] < INCREMENTS_BATS_PER_CLUSTER:
         best_bat_clusters[label]['index'].append(index)
         best_bat_clusters[label]['cant'] += 1
 
-    # Se incrementa la poblacion de todos los clusters en 2, agregando 2 soluciones locales
-    # de los mejores murcielagos de cada cluster
+    # Se guardan las nuevas soluciones generadas, junto con el indice del murcielago
+    # sobre el cual se generó la solucion local
+    new_solutions = []
+
+    # Se generan INCREMENTS_BATS_PER_CLUSTER soluciones locales de los mejores murcielagos de cada cluster
     for label in best_bat_clusters:
       for index in best_bat_clusters[label]['index']:
         # Se encuentra una nueva solucion local
         new_solution = np.empty(self.D)
         new_solution = self.generate_local_solution(new_solution, self.x[index], Amean)
+        new_solutions.append((new_solution, index))
 
-        # Se ingresa la nueva solucion a los muercielagos
-        self.x = np.append(self.x, [new_solution], axis=0)
-
-        # Se ingresan los datos del nuevo muercielago
-        self.freq.append(self.freq[index])
-        self.A.append(self.A[index])
-        self.r.append(self.r[index])
-        self.v.append(self.v[index])
-        self.fitness.append(self.function(new_solution))
-        self.NP += 1
-
-        x_is_modified = True
-        
-      print(self.NP, self.fitness[:4], self.fitness[-1], label)
-
-    # Si se modificaron las posiciones de los muercielagos, se actualiza el mejor murcielago
-    if x_is_modified:
-      self.best_bat()
+    return new_solutions
 
 
   def replace_cluster(self, clusters):
@@ -192,8 +195,6 @@ class BatAlgorithm():
     for (index, label) in enumerate(clusters.labels_):
       fitness_clusters[label]['sum'] += self.fitness[index]
       fitness_clusters[label]['total'] += 1
-
-    x_is_modified = False
 
     for label in fitness_clusters:
       # Se calcula el promedio
@@ -214,13 +215,7 @@ class BatAlgorithm():
             self.x[index], self.fitness[index] = self.generate_random_solution(self.x[index])
             cant -= 1
 
-          #print(self.x[index][:5], self.fitness[index], index, label)
-
-        x_is_modified = True
-        
       print(self.F_min - mean_cluster, self.F_min, mean_cluster, label)
-
-    return x_is_modified
 
   
   def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
