@@ -6,9 +6,10 @@ import csv
 from scripts.utils import *
 
 MAX_BATS = 100
-MIN_BATS =  10
+MIN_BATS = 10
 INCREMENTS_BATS = 2
 INCREMENTS_BATS_PER_CLUSTER = 3
+PERCENTAGE_IMPROVE_ACCEPTED = 10
 
 class BatAlgorithm():
   def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
@@ -39,6 +40,7 @@ class BatAlgorithm():
     self.x = np.zeros((NP, D))
     self.fitness = [0.0] * NP
     self.F_min = 0.0
+    self.improve_percentage = 1.0
     self.best = [0.0] * D
   
 
@@ -103,51 +105,62 @@ class BatAlgorithm():
     self.x = np.array(self.x)
 
 
+  def calculate_percentage(self, past_best, new_best):
+    current_difference = past_best - new_best
+    percentage = (current_difference * 100) / past_best
+    return percentage
+
+  def update_improve_percentage(self, past_best):
+    self.improve_percentage = self.calculate_percentage(past_best, self.fitness[0])
+
   def check_improve(self, past_best, Amean):
     global INCREMENTS_BATS
     global INCREMENTS_BATS_PER_CLUSTER
 
-    self.sort_by_fitness()
+    # Se revisa si el porcentaje de mejora es menor que el aceptado, si lo es
+    # se implementan las estrategias de autoajuste
+    if self.improve_percentage < PERCENTAGE_IMPROVE_ACCEPTED:
+      print(f"Improvement percetage: {round(self.improve_percentage, 2)}%  Applying self-tunning strategies")
 
-    # Si la solucion ha mejorado, y no se ha llegado al limite se decrementan los murcielagos
-    if past_best > self.F_min:
-      if self.NP - INCREMENTS_BATS >= MIN_BATS:
-        # Se decrementan la cantidad de murcielagos
-        self.NP -= INCREMENTS_BATS
+      # Si la solucion ha mejorado, y no se ha llegado al limite se decrementan los murcielagos
+      if past_best > self.F_min:
+        if self.NP - INCREMENTS_BATS >= MIN_BATS:
+          # Se decrementan la cantidad de murcielagos
+          self.NP -= INCREMENTS_BATS
 
-        # Se eliminan los peores murcielagos con sus datos de cada lista
-        self.A = self.A[:-INCREMENTS_BATS]
-        self.r = self.r[:-INCREMENTS_BATS]
-        self.freq = self.freq[:-INCREMENTS_BATS]
-        self.fitness = self.fitness[:-INCREMENTS_BATS]
-        self.v = self.v[:-INCREMENTS_BATS]
-        self.x = self.x[:-INCREMENTS_BATS]
-    else:
-      new_solutions = []
+          # Se eliminan los peores murcielagos con sus datos de cada lista
+          self.A = self.A[:-INCREMENTS_BATS]
+          self.r = self.r[:-INCREMENTS_BATS]
+          self.freq = self.freq[:-INCREMENTS_BATS]
+          self.fitness = self.fitness[:-INCREMENTS_BATS]
+          self.v = self.v[:-INCREMENTS_BATS]
+          self.x = self.x[:-INCREMENTS_BATS]
+      else:
+        new_solutions = []
 
-      clusters = clusterize_solutions(self.x, 3)
-      cant_clusters = np.unique(clusters.labels_).shape[0]
+        clusters = clusterize_solutions(self.x, 3)
+        cant_clusters = np.unique(clusters.labels_).shape[0]
 
-      # Sino se alcanzo el limite, se incrementa la poblacion de murcielagos
-      if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
-        # Se obtienen las nuevas soluciones generadas (llega una lista de tuplas, que guarda
-        # como primer elemento la solucion generada localmente, y como segundo elemento el indice
-        # del murcielago sobre el que se genero la solucion local
-        new_solutions = self.increment_cluster(clusters, Amean)
+        # Sino se alcanzo el limite, se incrementa la poblacion de murcielagos
+        if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
+          # Se obtienen las nuevas soluciones generadas (llega una lista de tuplas, que guarda
+          # como primer elemento la solucion generada localmente, y como segundo elemento el indice
+          # del murcielago sobre el que se genero la solucion local
+          new_solutions = self.increment_cluster(clusters, Amean)
 
-        # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
-        INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
+          # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
+          INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
 
-      # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
-      self.replace_cluster(clusters)
+        # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
+        self.replace_cluster(clusters)
 
-      # Si hay nuevas soluciones se agregan 
-      for element in new_solutions:
-        bat, index = element
-        self.add_new_bat(bat, index)
+        # Si hay nuevas soluciones se agregan 
+        for element in new_solutions:
+          bat, index = element
+          self.add_new_bat(bat, index)
 
-      # Se actualiza el mejor fitness
-      self.best_bat()
+        # Se actualiza el mejor fitness
+        self.best_bat()
     
 
   def add_new_bat(self, new_bat, index):
@@ -202,7 +215,10 @@ class BatAlgorithm():
       total = fitness_clusters[label]['total']
       mean_cluster = suma / total
 
-      if -1 <= self.F_min - mean_cluster <= 1:
+      percentage_diff = self.calculate_percentage(self.F_min, mean_cluster)
+
+      #if -1 <= self.F_min - mean_cluster <= 1:
+      if -5 <= percentage_diff <= 5:
         # Se reemplaza la mitad mas mala del cluster con soluciones aleatorias usando la funcion de exploracion
         cant = total // 2
 
@@ -215,7 +231,7 @@ class BatAlgorithm():
             self.x[index], self.fitness[index] = self.generate_random_solution(self.x[index])
             cant -= 1
 
-      print(self.F_min - mean_cluster, self.F_min, mean_cluster, label)
+      print(percentage_diff, self.F_min - mean_cluster, self.F_min, mean_cluster, label)
 
   
   def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
@@ -228,27 +244,31 @@ class BatAlgorithm():
       initial_time = time.perf_counter()
       logs_writter = csv.writer(logs_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
-      logs_writter.writerow('function,ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness'.split(','))
+      logs_writter.writerow('function,ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness,%improvement'.split(','))
 
       # Metaheuristic
       for t in range(self.N_Gen + 1):
         Amean = np.mean(self.A)
 
         if (t % interval_logs) == 0:
+          # LUEGO DE ESTO, LAS LISTAS ESTAN ORDENADAS POR FITNESS
+          self.sort_by_fitness()
+          self.update_improve_percentage(past_best)
+
           # For logs purposes, not metaheuristic
           MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
           MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
           current_time = parseSeconds(time.perf_counter() - initial_time)
-          log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},"{self.F_min}"'
+          log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},"{self.F_min}","{self.improve_percentage}"'
           logs_writter.writerow(log.split(','))
           print('\n' + log)
 
           # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
-            # LUEGO DE ESTO, LAS LISTAS ESTAN ORDENADAS POR FITNESS
             self.check_improve(past_best, Amean)
 
             past_best = self.F_min
+
 
         for i in range(self.NP):
           # Ecuacion (2)
