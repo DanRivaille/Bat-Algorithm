@@ -8,8 +8,9 @@ from scripts.utils import *
 MAX_BATS = 100
 MIN_BATS = 10
 INCREMENTS_BATS = 2
-INCREMENTS_BATS_PER_CLUSTER = 3
-PERCENTAGE_IMPROVE_ACCEPTED = 10
+INCREMENTS_BATS_PER_CLUSTER = 2             # Cantidad de murcielagos a agregar por cluster
+IMPROVE_PERCENTAGE_ACCEPTED = 10            # Porcentaje de mejora aceptado para aplicar el autonomo
+DIFF_CLUSTER_PERCENTAGE_ACCEPTED = 5        # Diferencia porcentual aceptado para clusters juntos
 
 class BatAlgorithm():
   def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
@@ -119,48 +120,47 @@ class BatAlgorithm():
 
     # Se revisa si el porcentaje de mejora es menor que el aceptado, si lo es
     # se implementan las estrategias de autoajuste
-    if self.improve_percentage < PERCENTAGE_IMPROVE_ACCEPTED:
+    if self.improve_percentage > IMPROVE_PERCENTAGE_ACCEPTED:
+      # Si la solucion ha mejorado, y no se ha llegado al limite se decrementan los murcielagos
+      if self.NP - INCREMENTS_BATS >= MIN_BATS:
+        # Se decrementan la cantidad de murcielagos
+        self.NP -= INCREMENTS_BATS
+
+        # Se eliminan los peores murcielagos con sus datos de cada lista
+        self.A = self.A[:-INCREMENTS_BATS]
+        self.r = self.r[:-INCREMENTS_BATS]
+        self.freq = self.freq[:-INCREMENTS_BATS]
+        self.fitness = self.fitness[:-INCREMENTS_BATS]
+        self.v = self.v[:-INCREMENTS_BATS]
+        self.x = self.x[:-INCREMENTS_BATS]
+    else:
       print(f"Improvement percetage: {round(self.improve_percentage, 2)}%  Applying self-tunning strategies")
 
-      # Si la solucion ha mejorado, y no se ha llegado al limite se decrementan los murcielagos
-      if past_best > self.F_min:
-        if self.NP - INCREMENTS_BATS >= MIN_BATS:
-          # Se decrementan la cantidad de murcielagos
-          self.NP -= INCREMENTS_BATS
+      new_solutions = []
 
-          # Se eliminan los peores murcielagos con sus datos de cada lista
-          self.A = self.A[:-INCREMENTS_BATS]
-          self.r = self.r[:-INCREMENTS_BATS]
-          self.freq = self.freq[:-INCREMENTS_BATS]
-          self.fitness = self.fitness[:-INCREMENTS_BATS]
-          self.v = self.v[:-INCREMENTS_BATS]
-          self.x = self.x[:-INCREMENTS_BATS]
-      else:
-        new_solutions = []
+      clusters = clusterize_solutions(self.x, 3)
+      cant_clusters = np.unique(clusters.labels_).shape[0]
 
-        clusters = clusterize_solutions(self.x, 3)
-        cant_clusters = np.unique(clusters.labels_).shape[0]
+      # Sino se alcanzo el limite, se incrementa la poblacion de murcielagos
+      if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
+        # Se obtienen las nuevas soluciones generadas (llega una lista de tuplas, que guarda
+        # como primer elemento la solucion generada localmente, y como segundo elemento el indice
+        # del murcielago sobre el que se genero la solucion local
+        new_solutions = self.increment_cluster(clusters, Amean)
 
-        # Sino se alcanzo el limite, se incrementa la poblacion de murcielagos
-        if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
-          # Se obtienen las nuevas soluciones generadas (llega una lista de tuplas, que guarda
-          # como primer elemento la solucion generada localmente, y como segundo elemento el indice
-          # del murcielago sobre el que se genero la solucion local
-          new_solutions = self.increment_cluster(clusters, Amean)
+        # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
+        INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
 
-          # Se guarda la cantidad de murcielagos que se agregaron, para despues eliminar la misma cantidad
-          INCREMENTS_BATS = cant_clusters * INCREMENTS_BATS_PER_CLUSTER
+      # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
+      self.replace_cluster(clusters)
 
-        # Si todos los muercielagos estan muy juntos, se reemplaza la mitad
-        self.replace_cluster(clusters)
+      # Si hay nuevas soluciones se agregan 
+      for element in new_solutions:
+        bat, index = element
+        self.add_new_bat(bat, index)
 
-        # Si hay nuevas soluciones se agregan 
-        for element in new_solutions:
-          bat, index = element
-          self.add_new_bat(bat, index)
-
-        # Se actualiza el mejor fitness
-        self.best_bat()
+      # Se actualiza el mejor fitness
+      self.best_bat()
     
 
   def add_new_bat(self, new_bat, index):
@@ -218,7 +218,7 @@ class BatAlgorithm():
       percentage_diff = self.calculate_percentage(self.F_min, mean_cluster)
 
       #if -1 <= self.F_min - mean_cluster <= 1:
-      if -5 <= percentage_diff <= 5:
+      if -DIFF_CLUSTER_PERCENTAGE_ACCEPTED <= percentage_diff <= DIFF_CLUSTER_PERCENTAGE_ACCEPTED:
         # Se reemplaza la mitad mas mala del cluster con soluciones aleatorias usando la funcion de exploracion
         cant = total // 2
 
