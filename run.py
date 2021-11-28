@@ -8,6 +8,8 @@ LAST_FUNCTION = 15
 INITIAL_EJECUTION = 1
 LAST_EJECUTION = 31
 
+ORIGINAL_MH = True
+
 def main():
   bench = Benchmark()
 
@@ -32,23 +34,18 @@ def main():
       ObjetiveFunction = bench.get_function(num_function)
 
       bats = BatAlgorithm(i, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, ObjetiveFunction)
-      bats.move_bats(num_function, f'Logs/Funcion{num_function}_{i}.csv', 100)
+      bats.move_bats(num_function, f'Logs/Funcion{num_function}_{i}.csv', ORIGINAL_MH, 100)
 
 
 def handle_args():
   """
-  Funcion que maneja los argumentos provenientes de la linea de comandos, las
-  opciones validas son:
-  -f, --function <number>              Ejecuta solo la funcion numero 'number'
-  -F, --functions-range <init>:<last>  Ejecuta de la funcion 'init' hasta 'last'
-  -e, --ejecution <number>             Ejecuta solo 'number' ejecuciones
-  -E, --ejecutions-range <init>:<last> Ejecuta desde 'init' hasta 'last' ejecuciones
-  -h                                   Muestra los comandos disponibles
+  Funcion que maneja los argumentos provenientes de la linea de comandos
   """
   global INITIAL_FUNCTION
   global LAST_FUNCTION
   global INITIAL_EJECUTION
   global LAST_EJECUTION
+  global ORIGINAL_MH
 
   cant_args = len(sys.argv)
 
@@ -85,8 +82,16 @@ def handle_args():
         help_text += "\n-F, --functions-range <init>:<last>  Ejecuta de la funcion 'init' hasta 'last'"
         help_text += "\n-e, --ejecution <number>             Ejecuta solo 'number' ejecuciones"
         help_text += "\n-E, --ejecutions-range <init>:<last> Ejecuta desde 'init' hasta 'last' ejecuciones"
+        help_text += "\n-A, --autonomous                     Ejecuta la metaheuristica con el autonomo"
+        help_text += "\n-O, --original                       Ejecuta la metaheuristica original (por defecto)"
         help_text += "\n-h                                   Muestra los comandos disponibles"
         print(help_text)
+
+    elif '-A' == current_arg or '--autonomous' == current_arg:
+        ORIGINAL_MH = False
+
+    elif '-O' == current_arg or '--original' == current_arg:
+        ORIGINAL_MH = True
 
       current_arg_index += 1
 

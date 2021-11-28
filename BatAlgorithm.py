@@ -234,7 +234,7 @@ class BatAlgorithm():
       print(percentage_diff, self.F_min - mean_cluster, self.F_min, mean_cluster, label)
 
   
-  def move_bats(self, n_fun=1, name_logs_file='logs.csv', interval_logs=100):
+  def move_bats(self, n_fun=1, name_logs_file='logs.csv', original_mh=True, interval_logs=100):
     self.init_bats()
     solutions = np.zeros(self.D)
 
@@ -263,9 +263,10 @@ class BatAlgorithm():
           logs_writter.writerow(log.split(','))
           print('\n' + log)
 
-          # Se ajusta la cantidad de murcielagos dependiendo del desempeño
           if t != 0:
-            self.check_improve(past_best, Amean)
+            if not original_mh:
+              # Se ajusta la cantidad de murcielagos dependiendo del desempeño
+              self.check_improve(past_best, Amean)
 
             past_best = self.F_min
 
