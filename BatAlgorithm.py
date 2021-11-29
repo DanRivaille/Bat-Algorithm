@@ -13,8 +13,9 @@ IMPROVE_PERCENTAGE_ACCEPTED = 10            # Porcentaje de mejora aceptado para
 DIFF_CLUSTER_PERCENTAGE_ACCEPTED = 5        # Diferencia porcentual aceptado para clusters juntos
 
 class BatAlgorithm():
-  def __init__(self, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
+  def __init__(self, num_function, ejecution, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, function):
     self.ejecution = ejecution
+    self.num_function = num_function
     self.BKS = BKS
     self.seed = int(time.time())
 
@@ -114,7 +115,7 @@ class BatAlgorithm():
   def update_improve_percentage(self, past_best):
     self.improve_percentage = self.calculate_percentage(past_best, self.fitness[0])
 
-  def check_improve(self, past_best, Amean):
+  def check_improve(self, clusters_writter, past_best, Amean, iteration):
     global INCREMENTS_BATS
     global INCREMENTS_BATS_PER_CLUSTER
 
@@ -138,8 +139,25 @@ class BatAlgorithm():
 
       new_solutions = []
 
-      clusters = clusterize_solutions(self.x, 3)
-      cant_clusters = np.unique(clusters.labels_).shape[0]
+      # Se clusterizan las soluciones
+      k = 3
+      clusters, epsilon = clusterize_solutions(self.x, k)
+      labels = clusters.labels_
+      unique_labels = np.unique(labels)
+      cant_clusters = unique_labels.shape[0]
+
+      # Se obtiene la informacion de los clusters
+      info_clusters = getInfoClusters(labels, self.fitness)
+
+      # Se guardan los logs del cluster
+      for label in unique_labels:
+        min_value = info_clusters[label]['min']
+        max_value = info_clusters[label]['max']
+        mean_cluster = info_clusters[label]['mean']
+        quantity = info_clusters[label]['quantity']
+
+        cluster_logs = f'{self.seed},{self.num_function},{self.ejecution},{iteration},{cant_clusters},{min_value},{max_value},{quantity},{mean_cluster},{epsilon},{k},{label}'
+        clusters_writter.writerow(cluster_logs.split(','))
 
       # Sino se alcanzo el limite, se incrementa la poblacion de murcielagos
       if self.NP + (cant_clusters * INCREMENTS_BATS_PER_CLUSTER) < MAX_BATS:
@@ -234,76 +252,85 @@ class BatAlgorithm():
       print(percentage_diff, self.F_min - mean_cluster, self.F_min, mean_cluster, label)
 
   
-  def move_bats(self, n_fun=1, name_logs_file='logs.csv', original_mh=True, interval_logs=100):
+  def move_bats(self, name_logs_file='logs.csv', name_cluster_logs_file='cluster.csv', original_mh=True, interval_logs=100):
+    # Archivo de logs de la MH
+    logs_file = open(name_logs_file, mode='w')
+    logs_writter = csv.writer(logs_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    logs_writter.writerow('function,ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness,%improvement'.split(','))
+
+    # Archivo de logs de los clusters
+    clusters_file = open(name_cluster_logs_file, mode='w')
+    cluster_writter = csv.writer(clusters_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    cluster_writter.writerow('seed,function,ejecution,iteration,cantClusters,min_value,max_value,cantElements,meanCluster,epsilon,k,label'.split(','))
+    
     self.init_bats()
     solutions = np.zeros(self.D)
 
-    past_best = self.F_min
+    past_best = self.F_min 
+    initial_time = time.perf_counter()
 
-    with open(name_logs_file, mode='w') as logs_file:
-      initial_time = time.perf_counter()
-      logs_writter = csv.writer(logs_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    # Metaheuristic
+    for t in range(self.N_Gen + 1):
+      Amean = np.mean(self.A)
 
-      logs_writter.writerow('function,ejecution,iteration,D,NP,N_Gen,A,r,fmin,fmax,lower,upper,alpha,gamma,time_ms,seed,BKS,fitness,%improvement'.split(','))
+      if (t % interval_logs) == 0:
+        # LUEGO DE ESTO, LAS LISTAS ESTAN ORDENADAS POR FITNESS
+        self.sort_by_fitness()
+        self.update_improve_percentage(past_best)
 
-      # Metaheuristic
-      for t in range(self.N_Gen + 1):
-        Amean = np.mean(self.A)
+        # For logs purposes, not metaheuristic
+        MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
+        MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
+        current_time = parseSeconds(time.perf_counter() - initial_time)
+        log = f'{self.num_function},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},"{self.F_min}","{self.improve_percentage}"'
+        logs_writter.writerow(log.split(','))
+        print('\n' + log)
 
-        if (t % interval_logs) == 0:
-          # LUEGO DE ESTO, LAS LISTAS ESTAN ORDENADAS POR FITNESS
-          self.sort_by_fitness()
-          self.update_improve_percentage(past_best)
+        if t != 0:
+          if not original_mh:
+            # Se ajusta la cantidad de murcielagos dependiendo del desempeño
+            self.check_improve(cluster_writter, past_best, Amean, t)
 
-          # For logs purposes, not metaheuristic
-          MH_params = f'{self.D},{self.NP},{self.N_Gen},{self.A0},{self.r0},{self.fmin}'
-          MH_params += f',{self.fmax},{self.Lower},{self.Upper},{self.alpha},{self.gamma}'
-          current_time = parseSeconds(time.perf_counter() - initial_time)
-          log = f'{n_fun},{self.ejecution},{t},{MH_params},{current_time},{self.seed},{self.BKS},"{self.F_min}","{self.improve_percentage}"'
-          logs_writter.writerow(log.split(','))
-          print('\n' + log)
-
-          if t != 0:
-            if not original_mh:
-              # Se ajusta la cantidad de murcielagos dependiendo del desempeño
-              self.check_improve(past_best, Amean)
-
-            past_best = self.F_min
+          past_best = self.F_min
 
 
-        for i in range(self.NP):
-          # Ecuacion (2)
-          beta = np.random.uniform(0, 1)
-          self.freq[i] = self.fmin + (self.fmax - self.fmin) * beta
+      for i in range(self.NP):
+        # Ecuacion (2)
+        beta = np.random.uniform(0, 1)
+        self.freq[i] = self.fmin + (self.fmax - self.fmin) * beta
 
+        for j in range(self.D):
+          # Ecuaciones (3) y (4)
+          self.v[i][j] = self.v[i][j] + (self.x[i][j] - self.best[j]) * self.freq[i]
+          solutions[j] = self.simple_bounds(self.x[i][j] + self.v[i][j], self.Lower, self.Upper)
+        
+        random = np.random.uniform(0, 1)
+
+        if(random > self.r[i]):
+          solutions = self.generate_local_solution(solutions, self.best, Amean)
+        
+        fitness = self.function(solutions)
+        
+        random = np.random.uniform(0, 1)
+        
+        # Se ve si se acepta la nueva solucion
+        if(random < self.A[i] and fitness < self.fitness[i]):
+          self.fitness[i] = fitness
           for j in range(self.D):
-            # Ecuaciones (3) y (4)
-            self.v[i][j] = self.v[i][j] + (self.x[i][j] - self.best[j]) * self.freq[i]
-            solutions[j] = self.simple_bounds(self.x[i][j] + self.v[i][j], self.Lower, self.Upper)
-          
-          random = np.random.uniform(0, 1)
+            self.x[i][j] = solutions[j]
 
-          if(random > self.r[i]):
-            solutions = self.generate_local_solution(solutions, self.best, Amean)
+        # Si se encontro un mejor fitness, se actualizan algunas variables
+        if(self.fitness[i] < self.F_min):
+          self.set_best_bat(self.x[i], self.fitness[i])
+        
+          # Se actualizan A y r
+          self.A[i] = self.A[i] * self.alpha
+          self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
           
-          fitness = self.function(solutions)
-          
-          random = np.random.uniform(0, 1)
-          
-          # Se ve si se acepta la nueva solucion
-          if(random < self.A[i] and fitness < self.fitness[i]):
-            self.fitness[i] = fitness
-            for j in range(self.D):
-              self.x[i][j] = solutions[j]
-
-          # Si se encontro un mejor fitness, se actualizan algunas variables
-          if(self.fitness[i] < self.F_min):
-            self.set_best_bat(self.x[i], self.fitness[i])
-          
-            # Se actualizan A y r
-            self.A[i] = self.A[i] * self.alpha
-            self.r[i] = self.r0 * (1 - math.exp(-self.gamma * t))
-
+		
+    # Se cierran los archivos
+    logs_file.close()
+    clusters_file.close()
 
   def generate_local_solution(self, solution, bat, Amean):
     '''

@@ -32,9 +32,13 @@ def main():
       Lower = info['lower']
       Upper = info['upper']
       ObjetiveFunction = bench.get_function(num_function)
+      
+      name_ejecution_file = f'function{num_function}_{i}.csv'
+      name_logs_file = 'Logs/' + name_ejecution_file
+      name_cluster_file = 'Logs/clusters/' + name_ejecution_file
 
-      bats = BatAlgorithm(i, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, ObjetiveFunction)
-      bats.move_bats(num_function, f'Logs/Funcion{num_function}_{i}.csv', ORIGINAL_MH, 100)
+      bats = BatAlgorithm(num_function, i, BKS, D, NP, N_Gen, A, r, alpha, gamma, fmin, fmax, Lower, Upper, ObjetiveFunction)
+      bats.move_bats(name_logs_file, name_cluster_file, ORIGINAL_MH, 100)
 
 
 def handle_args():
@@ -87,10 +91,10 @@ def handle_args():
         help_text += "\n-h                                   Muestra los comandos disponibles"
         print(help_text)
 
-    elif '-A' == current_arg or '--autonomous' == current_arg:
+      elif '-A' == current_arg or '--autonomous' == current_arg:
         ORIGINAL_MH = False
 
-    elif '-O' == current_arg or '--original' == current_arg:
+      elif '-O' == current_arg or '--original' == current_arg:
         ORIGINAL_MH = True
 
       current_arg_index += 1
