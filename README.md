@@ -19,9 +19,10 @@ $ python3 -m venv ./venv
 $ pip3 install -r requeriments.txt
 ```
 
-3. Crear la carpeta de logs:
+3. Crear la carpeta de logs y los logs de los clusters:
 ```
 $ mkdir Logs
+$ mkdir Logs/clusters
 ```
 4. Probar que funcione:
 ```
