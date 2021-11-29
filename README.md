@@ -42,20 +42,22 @@ Si se corre el archivo run.py sin argumentos ejecutará por defecto la funcion 1
 -F, --functions-range <init>:<last>  Ejecuta de la funcion 'init' hasta 'last'
 -e, --ejecution <number>             Ejecuta solo 'number' ejecuciones
 -E, --ejecutions-range <init>:<last> Ejecuta desde 'init' hasta 'last' ejecuciones
+-A, --autonomous                     Ejecuta la MH con el autonomo
+-O, --original                       Ejecuta la MH original (opcion por defecto)
 -h                                   Muestra los comandos disponibles
 ```
 ### Examples
-* Ejecuta solo la funcion 7 (31 ejecuciones por defecto)
+* Ejecuta solo la funcion 7 con el autonomo (31 ejecuciones por defecto)
 ```
-(venv) $ python3 run.py -f 7
+(venv) $ python3 run.py -f 7 -A
 ```
 
-* Ejecuta la funcion 2 hasta la 10 (31 ejecuciones por defecto en cada una)
+* Ejecuta la funcion 2 hasta la 10 (31 ejecuciones por defecto en cada una) con la metaheuristica original
 ```
 (venv) $ python3 run.py -F 2:10
 ```
 
-* Ejecuta solo la funcion 3, y desde la ejecucion 14 hasta la 31
+* Ejecuta solo la funcion 3, y desde la ejecucion 14 hasta la 31, con el autonomo
 ```
-(venv) $ python3 run.py -f 3 -E 14:31
+(venv) $ python3 run.py -f 3 -E 14:31 -A
 ```
