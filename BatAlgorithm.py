@@ -47,6 +47,9 @@ class BatAlgorithm():
   
 
   def init_bats(self):
+    '''
+    Inicializa la poblacion de murcielagos
+    '''
     np.random.seed(self.seed)
 
     # Se generan soluciones aleatorias (entre el rango establecido por las bandas)
@@ -63,6 +66,9 @@ class BatAlgorithm():
   
 
   def best_bat(self):
+    '''
+    Busca y actualiza el mejor murcielago
+    '''
     j = 0
     for i in range(self.NP):
       if self.fitness[i] < self.fitness[j]:
@@ -72,6 +78,9 @@ class BatAlgorithm():
 
 
   def set_best_bat(self, bat, fitness):
+    '''
+    Establece el mejor muercielago
+    '''
     for i in range(self.D):
       self.best[i] = bat[i]
     
@@ -79,6 +88,9 @@ class BatAlgorithm():
 
   
   def simple_bounds(self, value, lower, upper):
+    '''
+    Le aplica las bandas a 'value'
+    '''
     if(value > upper):
       value = upper
         
@@ -89,6 +101,9 @@ class BatAlgorithm():
 
 
   def sort_by_fitness(self):
+    '''
+    Ordena todas las listas que guardan datos de la poblacion de murcielagos a partir del fitness
+    '''
     # Se empaquetan los datos, para que cada murcielago tenga sus datos juntos al ordenarlos
     l = list(zip(self.x, self.A, self.r, self.freq, self.fitness, self.v))
 
@@ -108,14 +123,23 @@ class BatAlgorithm():
 
 
   def calculate_percentage(self, past_best, new_best):
+    '''
+    Calcula el porcentaje de mejora a partir del mejor actual y el pasado mejor
+    '''
     current_difference = past_best - new_best
     percentage = (current_difference * 100) / past_best
     return percentage
 
   def update_improve_percentage(self, past_best):
+    '''
+    Actualiza el porcentaje de mejora
+    '''
     self.improve_percentage = self.calculate_percentage(past_best, self.fitness[0])
 
   def check_improve(self, clusters_writter, past_best, Amean, iteration):
+    '''
+    Aplica el autonomo
+    '''
     global INCREMENTS_BATS
     global INCREMENTS_BATS_PER_CLUSTER
 
@@ -149,7 +173,7 @@ class BatAlgorithm():
       # Se obtiene la informacion de los clusters
       info_clusters = getInfoClusters(labels, self.fitness)
 
-      # Se guardan los logs del cluster
+      # Se guardan los logs del cluster (ver getInfoClusters para el formato de info_clusters)
       for label in unique_labels:
         min_value = info_clusters[label]['min']
         max_value = info_clusters[label]['max']
@@ -182,7 +206,9 @@ class BatAlgorithm():
     
 
   def add_new_bat(self, new_bat, index):
-    # Se ingresan los datos del nuevo muercielago
+    '''
+    Agrega un nuevo murcielago a la poblacion
+    '''
     self.x = np.append(self.x, [new_bat], axis=0)
     self.freq.append(self.freq[index])
     self.A.append(self.A[index])
@@ -192,6 +218,10 @@ class BatAlgorithm():
     self.NP += 1
 
   def increment_cluster(self, clusters, Amean):
+    '''
+    Se incrementa la poblacion de los clusters, agregando murcielagos generados
+    alrededor de los mejores de cada cluster
+    '''
     x_is_modified = False
     best_bat_clusters = {l: {'index': [], 'cant': 0} for l in np.unique(clusters.labels_)}
 
@@ -217,6 +247,9 @@ class BatAlgorithm():
 
 
   def replace_cluster(self, clusters):
+    '''
+    Reemplaza la mitad mas mala de los clusters, con soluciones generados aleatorias
+    '''
     # Diccionario que contiene la informacion para calcular el promedio de cada cluster.
     # Para cada cluster se puede acceder a su informacion por su label,
     # como valor guarda un diccionario para organizar su informacion
